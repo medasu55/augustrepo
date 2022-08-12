@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="971aa83d-83bc-43a3-bec7-e4434803436d" >
+		<http:listener-connection host="0.0.0.0" port="9001" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="70bab954-eeab-4675-9be7-5f8493f42a1e" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Welcome@2022" database="classicmodels" />
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="d3223067-2eea-4903-ba6f-090113010e1b" defaultErrorHandler-ref="My-global-projectError_Handler" />
+	<flow name="global-error-handler-demo" doc:id="823627e2-cfa3-4f8e-afd9-fa95e688a235" >
+		<http:listener doc:name="Listener" doc:id="9f734a07-cfff-412b-811c-f65eeac1edda" config-ref="HTTP_Listener_config" path="/"/>
+		<file:read doc:name="Read Text File" doc:id="bfac5ff6-f3a8-4489-b43c-4c1c99d79deb" path="D:\sales records\5_Records1.csv"/>
+		<logger level="INFO" doc:name="Display Text File" doc:id="15e9adf1-2454-44a1-9e24-60b0bd2d5e95" message="#[payload]"/>
+		<db:select doc:name="Fetch Data" doc:id="d96de51d-1579-41ce-a125-23e60ee7c5a5" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from small1]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="ed1fd788-5e91-44ba-9c44-57f8aa27e3ce" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01.id,
+	col1: payload01.col1,
+	col2: payload01.col2 default "",
+	createddate: payload01.Created_date default |1815-12-10|
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Display Output CSV" doc:id="4e74ec4f-f4cb-4bcb-8fc2-2e4c26da5631" message="#[payload]"/>
+	</flow>
+	<error-handler name="My-global-projectError_Handler" doc:id="11aedcfa-6258-4aa4-8577-8f81a0c3c366" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a3ff4bea-7eea-4b85-b30d-a7800f7b8a60" >
+			<set-payload value="There is a some error in the project" doc:name="Set Payload" doc:id="26dfb112-513a-42cf-a557-a2f99848c00d" />
+			<logger level="INFO" doc:name="Logger" doc:id="cff179b8-f924-4dac-bd99-2d1151beb3a0" message="#[payload]"/>
+		</on-error-continue>
+	</error-handler>
+</mule>
